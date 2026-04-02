@@ -230,8 +230,22 @@ function playSlot(slot) {
 }
 
 function deleteSlot(slot) {
-    if (!confirm("Supprimer définitivement cette sauvegarde ?")) return;
-    localStorage.removeItem(SAVE_PREFIX + slot);
+    if (!confirm("⚠️ Supprimer définitivement cette sauvegarde ?")) return;
+
+    const key = SAVE_PREFIX + slot;
+
+    // 1. Supprimer du LocalStorage
+    localStorage.removeItem(key);
+
+    // 2. Supprimer le Cookie (très important car ton code de chargement vérifie peut-être les deux)
+    document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+
+    // 3. Si c'était le slot actif, on le retire
+    if (localStorage.getItem("galactic_cookie_active_slot") == slot) {
+        localStorage.removeItem("galactic_cookie_active_slot");
+    }
+
+    console.log(`Slot ${slot} totalement effacé.`);
     updateSlots();
 }
 

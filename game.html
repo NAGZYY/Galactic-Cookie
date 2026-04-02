@@ -458,29 +458,52 @@
             font-family: 'Orbitron', monospace;
         }
 
-        /* Prestige button */
+        /* --- Bouton Prestige Toujours Visible --- */
         .prestige-btn {
             display: block;
             width: 100%;
             margin-top: 10px;
-            padding: 10px;
-            background: linear-gradient(135deg, rgba(138,43,226,0.2), rgba(75,0,130,0.2));
             border: 1px solid rgba(138,43,226,0.4);
-            border-radius: 8px;
+            padding: 12px;
+            /* Aspect Grisé par défaut */
+            background: rgba(252, 244, 255, .1); 
+            border: 1px solid rgb(247, 237, 255);
+            color: rgb(247, 237, 255); /* Texte gris pâle */
+            
             font-family: 'Orbitron', monospace;
-            font-size: 0.6rem;
-            color: #bf7fff;
-            cursor: none;
+            font-size: 0.65rem;
+            border-radius: 8px;
             letter-spacing: 1px;
-            transition: all 0.3s;
-            opacity: 0;
-            pointer-events: none;
+            cursor: not-allowed;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: grayscale(1); /* Force l'aspect non-coloré */
+            text-transform: uppercase;
         }
-        .prestige-btn.visible { opacity: 1; pointer-events: auto; }
-        .prestige-btn.visible:hover {
-            background: linear-gradient(135deg, rgba(138,43,226,0.4), rgba(75,0,130,0.4));
-            border-color: rgba(138,43,226,0.7);
-            box-shadow: 0 0 20px rgba(138,43,226,0.3);
+
+        /* --- État "Prêt à Transcender" (Violet) --- */
+        .prestige-btn.available {
+            filter: grayscale(0); /* On rend les couleurs */
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.3));
+            border: 1px solid rgba(138, 43, 226, 0.6);
+            color: #bf7fff; /* Violet clair éclatant */
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.2);
+            animation: pulse-prestige 2s infinite; /* Optionnel: petite animation pour attirer l'oeil */
+        }
+
+        .prestige-btn.available:hover {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.4), rgba(75, 0, 130, 0.5));
+            border-color: #bf7fff;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        /* Petite animation de pulsation quand le bouton est prêt */
+        @keyframes pulse-prestige {
+            0% { box-shadow: 0 0 10px rgba(138, 43, 226, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(138, 43, 226, 0.4); }
+            100% { box-shadow: 0 0 10px rgba(138, 43, 226, 0.2); }
         }
 
         /* Prestige overlay */
@@ -566,6 +589,15 @@
             animation: flash-out 0.8s ease forwards;
         }
         @keyframes flash-out { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* Animation spéciale pour la victoire */
+        .victory-flash {
+            animation: victory-rainbow 5s linear infinite;
+        }
+        @keyframes victory-rainbow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -580,12 +612,19 @@
     <button onclick="confirmPrestige()" style="background:linear-gradient(135deg,#6a0dad,#8b00ff);border:none;border-radius:10px;padding:14px 40px;font-family:'Orbitron',monospace;font-size:0.8rem;color:white;cursor:pointer;letter-spacing:2px;box-shadow:0 0 40px rgba(138,43,226,0.6);">TRANSCENDER</button>
 </div>
 
+<div class="prestige-overlay" id="victoryOverlay" style="background: radial-gradient(circle, #2a004f 0%, #000 100%);">
+    <div class="prestige-big" style="color: var(--gold); text-shadow: 0 0 50px var(--gold);">🏆 VICTOIRE TOTALE 🏆</div>
+    <div class="prestige-sub">Tu as conquis l'intégralité de l'univers sucré</div>
+    <div style="font-size: 1.2rem; color: white; margin-bottom: 30px; font-family: 'Orbitron';">Tous les trophées ont été obtenus !</div>
+    <button onclick="closeVictory()" style="background:var(--gold); border:none; border-radius:10px; padding:14px 40px; font-family:'Orbitron',monospace; font-size:0.8rem; color:black; cursor:pointer; font-weight:bold; letter-spacing:2px; box-shadow:0 0 40px var(--gold);">CONTINUER L'INFINI</button>
+</div>
+
 <div class="game-wrapper">
     <!-- HEADER -->
     <header>
         <div class="logo"><a href="index.html" style="text-decoration: none; color: inherit;">🍪 GALACTIC COOKIE</a></div>
         <div class="stats-bar">
-            <div class="stat-pill">CPS: <span id="cpsHeader">0</span></div>
+            <div class="stat-pill">🍪 CPS: <span id="cpsHeader">0</span></div>
             <div class="stat-pill">TOTAL: <span id="totalHeader">0</span></div>
             <div class="stat-pill">PRESTIGE: <span id="prestigeHeader">★0</span></div>
         </div>
@@ -593,7 +632,6 @@
 
     <!-- LEFT PANEL: SHOP -->
     <div class="panel-left" id="shopPanel">
-        <div class="panel-title">Boutique Galactique</div>
         <div id="shopItems"></div>
         <button class="prestige-btn" id="prestigeBtn" onclick="startPrestige()">⚡ PRESTIGE — Transcender</button>
     </div>
@@ -718,6 +756,7 @@ let state = {
     score: 0,
     totalEarned: 0,
     prestige: 0,
+    prestigeBonus: 1,
     clickPower: 1,
     cps: 0,
     combo: 0,
@@ -763,21 +802,35 @@ const CLICK_UPGRADES = [
 
 // ==================== ACHIEVEMENTS ====================
 const ACHIEVEMENTS_DEF = [
+    // --- TIER 1 : DÉBUTANT (Quelques minutes de jeu) ---
     { id: 'first_click', name: 'Premier Clic', icon: '👆', desc: 'Ton voyage commence ici', condition: s => s.totalEarned >= 1 },
-    { id: 'hundred', name: 'Centenaire', icon: '💯', desc: '100 biscuits gagnés', condition: s => s.totalEarned >= 100 },
-    { id: 'thousand', name: 'Millionnaire du Biscuit', icon: '🎰', desc: '1 000 biscuits', condition: s => s.totalEarned >= 1000 },
-    { id: 'ten_k', name: 'Biscuitier Sérieux', icon: '🏆', desc: '10 000 biscuits', condition: s => s.totalEarned >= 10000 },
-    { id: 'million', name: 'Galactique', icon: '🌌', desc: '1 000 000 biscuits', condition: s => s.totalEarned >= 1000000 },
-    { id: 'billion', name: 'Cosmique', icon: '✨', desc: '1 000 000 000 biscuits', condition: s => s.totalEarned >= 1000000000 },
     { id: 'combo5', name: 'Combo Enflammé', icon: '🔥', desc: 'Atteins un combo ×5', condition: s => s.combo >= 5 },
-    { id: 'combo10', name: 'Frenzy', icon: '⚡', desc: 'Atteins un combo ×10', condition: s => s.combo >= 10 },
+    { id: 'hundred', name: 'Centenaire', icon: '💯', desc: '100 biscuits gagnés', condition: s => s.totalEarned >= 100 },
+    { id: 'thousand', name: 'Boulanger Amateur', icon: '🍪', desc: '1 000 biscuits accumulés', condition: s => s.totalEarned >= 1000 },
     { id: 'grandma5', name: 'Famille Nombreuse', icon: '👩‍👧‍👦', desc: '5 Grand-Mères actives', condition: s => (s.buildings.find(b=>b.id==='grandma')||{count:0}).count >= 5 },
-    { id: 'spaceship1', name: 'Cosmonaute Pâtissier', icon: '👨‍🚀', desc: 'Premier vaisseau lancé', condition: s => (s.buildings.find(b=>b.id==='spaceship')||{count:0}).count >= 1 },
+
+    // --- TIER 2 : APPRENTI (Optimisation & Chance) ---
+    { id: 'lucky_seven', name: 'Triple Sept', icon: '🍀', desc: 'Avoir exactement 777 biscuits', condition: s => Math.floor(s.score) === 777 },
+    { id: 'fast_clicker', name: 'Doigts de Plomb', icon: '💅', desc: 'Atteins 10 clics par seconde', condition: s => (s.clicksPerSec || 0) >= 10 },
+    { id: 'combo10', name: 'Frénésie Spatiale', icon: '⚡', desc: 'Atteins un combo ×10', condition: s => s.combo >= 10 },
+    { id: 'click_master', name: 'Autocuistot', icon: '🖱️', desc: 'Possède 50 Doigts Cosmiques', condition: s => (s.buildings.find(b=>b.id==='cursor')||{count:0}).count >= 50 },
+    { id: 'cookie_farm', name: 'Agriculture Intensive', icon: '🚜', desc: 'Possède 25 Fermes', condition: s => (s.buildings.find(b=>b.id==='farm')||{count:0}).count >= 25 },
+
+    // --- TIER 3 : INDUSTRIEL (La route vers le Prestige) ---
+    { id: 'combo20', name: 'Vitesse Lumière', icon: '🚀', desc: 'Atteins un combo ×20', condition: s => s.combo >= 20 },
+    { id: 'million', name: 'Galactique', icon: '🌌', desc: 'Le premier million est le plus dur', condition: s => s.totalEarned >= 1000000 },
+    { id: 'blackhole_one', name: 'Horizon des Événements', icon: '🕳️', desc: 'Ton premier Trou Noir Sucré', condition: s => (s.buildings.find(b=>b.id==='blackhole')||{count:0}).count >= 1 },
+    { id: 'all_buildings', name: 'Empire Industriel', icon: '🏢', desc: 'Possède au moins 1 de chaque bâtiment', condition: s => s.buildings.length >= BUILDINGS.length && s.buildings.every(b => b.count >= 1) },
+    { id: 'overclock', name: 'Overclocking', icon: '🔌', desc: 'Produis plus de 1M de biscuits par seconde', condition: s => s.cps >= 1000000 },
     { id: 'prestige1', name: 'Renaissance', icon: '♻️', desc: 'Premier prestige accompli', condition: s => s.prestige >= 1 },
-    { id: 'prestige3', name: 'Éternel', icon: '⭐', desc: '3 prestiges', condition: s => s.prestige >= 3 },
-    { id: 'prestige5', name: 'Immortel', icon: '🌟', desc: '5 prestiges', condition: s => s.prestige >= 5 },
-    { id: 'prestige10', name: 'Incroyable', icon: '🦾', desc: '10 prestiges', condition: s => s.prestige >= 10 },
-    { id: 'prestige20', name: 'Impossible', icon: '🤖', desc: '20 prestiges', condition: s => s.prestige >= 20 },
+
+    // --- TIER 4 : VÉTÉRAN (Multiples Prestiges) ---
+    { id: 'billion', name: 'Cosmique', icon: '✨', desc: '1 000 000 000 biscuits', condition: s => s.totalEarned >= 1000000000 },
+    { id: 'prestige10', name: 'Maître du Temps', icon: '🦾', desc: '10 prestiges accumulés', condition: s => s.prestige >= 10 },
+
+    // --- TIER 5 : DIEU DU BISCUIT (Endgame) ---
+    { id: 'trillion', name: 'Souverain du Sucre', icon: '🍭', desc: '1 000 000 000 000 biscuits', condition: s => s.totalEarned >= 1000000000000 },
+    { id: 'high_prestige', name: 'Entité Divine', icon: '👑', desc: 'Atteins le niveau de prestige 100', condition: s => s.prestige >= 50 },
 ];
 
 // ==================== MILESTONES ====================
@@ -786,63 +839,76 @@ const MILESTONES = [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000,
 // ==================== SAVE / LOAD (cookies 🍪) ====================
 
 function saveGame() {
+    // Conversion du Set en Array pour que le JSON puisse le stocker
+    const achievementsArray = Array.from(state.unlockedAchievements);
+
     const data = {
-        score:               state.score,
-        totalEarned:         state.totalEarned,
-        prestige:            state.prestige,
-        clickPower:          state.clickPower,
-        prestigeBonus:       state.prestigeBonus,
-        buildings:           state.buildings.map(b => ({ id: b.id, count: b.count })),
-        upgrades:            CLICK_UPGRADES.map(u => ({ id: u.id, bought: u.bought })),
-        achievements:        [...state.unlockedAchievements],
-        savedAt:             Date.now(),
-        cps: state.cps,
+        score: state.score,
+        totalEarned: state.totalEarned,
+        prestige: state.prestige,
         prestigeBonus: state.prestigeBonus,
+        clickPower: state.clickPower,
+        cps: state.cps,
+        // On utilise unlockedAchievements partout pour la cohérence
+        unlockedAchievements: achievementsArray, 
+        buildings: state.buildings.map(b => ({ id: b.id, count: b.count })),
+        // Ajout des upgrades sinon ils sont perdus au F5
+        upgrades: CLICK_UPGRADES.map(u => ({ id: u.id, bought: u.bought })),
+        savedAt: Date.now(),
     };
 
-    // Cookie
-    try {
-        const encoded = btoa(JSON.stringify(data));
-        document.cookie = `${SAVE_KEY}=${encoded}; max-age=31536000; path=/; SameSite=Lax`;
-    } catch(e) {}
+    const jsonData = JSON.stringify(data);
 
-    // LocalStorage (principal)
+    // LocalStorage
     try {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        localStorage.setItem(SAVE_KEY, jsonData);
+    } catch(e) {
+        console.error("Erreur sauvegarde LocalStorage:", e);
+    }
+
+    // Cookie (Backup)
+    try {
+        const encoded = btoa(unescape(encodeURIComponent(jsonData)));
+        document.cookie = `${SAVE_KEY}=${encoded}; max-age=31536000; path=/; SameSite=Lax`;
     } catch(e) {}
 }
 
 function loadGame() {
     let data = null;
 
-    // localStorage en priorité
+    // 1. Récupération LocalStorage
     try {
         const raw = localStorage.getItem(SAVE_KEY);
         if (raw) data = JSON.parse(raw);
-    } catch(e) {}
+    } catch(e) { console.error("Erreur JSON LocalStorage"); }
 
-    // fallback cookie
+    // 2. Fallback Cookie si LocalStorage vide
     if (!data) {
         try {
             const match = document.cookie.match(new RegExp(`${SAVE_KEY}=([^;]+)`));
-            if (match) data = JSON.parse(atob(match[1]));
-        } catch(e) {}
+            if (match) {
+                const decoded = decodeURIComponent(escape(atob(match[1])));
+                data = JSON.parse(decoded);
+            }
+        } catch(e) { console.error("Erreur JSON Cookie"); }
     }
 
     if (!data) return false;
 
-    state.score          = data.score ?? 0;
-    state.totalEarned    = data.totalEarned ?? 0;
-    state.prestige       = data.prestige ?? 0;
-    state.clickPower     = data.clickPower ?? 1;
-    state.prestigeBonus  = data.prestigeBonus ?? 1;
+    // 3. Application des stats de base
+    state.score         = data.score ?? 0;
+    state.totalEarned   = data.totalEarned ?? 0;
+    state.prestige      = data.prestige ?? 0;
+    state.prestigeBonus = data.prestigeBonus ?? 1;
 
+    // 4. Chargement des Bâtiments
     (data.buildings || []).forEach(saved => {
         const b = state.buildings.find(x => x.id === saved.id);
         if (b) b.count = saved.count || 0;
     });
 
-    state.clickPower = 1;
+    // 5. Chargement des Upgrades et recalcul du ClickPower
+    state.clickPower = 1; 
     (data.upgrades || []).forEach(saved => {
         const u = CLICK_UPGRADES.find(x => x.id === saved.id);
         if (u && saved.bought) {
@@ -851,25 +917,35 @@ function loadGame() {
         }
     });
 
-    state.unlockedAchievements = new Set(data.achievements || []);
+    // 6. SYNC DES TROPHÉES (Le correctif pour ton bug)
+    // On vérifie les deux noms possibles au cas où, puis on transforme l'Array en Set
+    const savedAchievs = data.unlockedAchievements || data.achievements || [];
+    state.unlockedAchievements = new Set(savedAchievs);
 
+    // 7. Calcul du hors-ligne et CPS
     if (data.savedAt) {
-        calcCps();
-        const elapsed = Math.min((Date.now() - data.savedAt) / 1000, 3600);
+        calcCps(); // On recalcule le CPS actuel basé sur les bâtiments chargés
+        const elapsed = Math.min((Date.now() - data.savedAt) / 1000, 3600); // Max 1h
         const offline = elapsed * state.cps * state.prestigeBonus;
 
         if (offline > 0) {
             state.score += offline;
             state.totalEarned += offline;
-            setTimeout(
-                () => showNotification(
-                    '💤 Revenus hors-ligne',
-                    `+${fmt(offline)} biscuits pendant ${Math.floor(elapsed)}s`
-                ),
-                800
-            );
+            // Petit délai pour laisser l'UI s'initialiser
+            setTimeout(() => {
+                if (typeof showNotification === "function") {
+                    showNotification(
+                        '💤 Revenus hors-ligne',
+                        `+${Math.floor(offline)} biscuits pendant ${Math.floor(elapsed)}s`
+                    );
+                }
+            }, 1000);
         }
     }
+
+    // 8. Mise à jour visuelle immédiate
+    if (typeof updateAchievementsUI === "function") updateAchievementsUI();
+    if (typeof renderShop === "function") renderShop();
 
     return true;
 }
@@ -951,10 +1027,10 @@ function getClicksPerSecond() {
 
 // ==================== FORMAT NUMBER ====================
 function fmt(n) {
-    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'G';
-    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+    if (n >= 1e12) return parseFloat((n / 1e12).toFixed(2)) + 'T';
+    if (n >= 1e9)  return parseFloat((n / 1e9).toFixed(2))  + 'G';
+    if (n >= 1e6)  return parseFloat((n / 1e6).toFixed(2))  + 'M';
+    if (n >= 1e3)  return parseFloat((n / 1e3).toFixed(1))  + 'K';
     return Math.floor(n).toString();
 }
 
@@ -1149,6 +1225,10 @@ function startAutoTick() {
             state.score += earned;
             state.totalEarned += earned;
         }
+
+        state.clicksPerSec = getClicksPerSecond();
+
+        // 3. Rafraîchissement
         updateUI();
         checkAchievements();
     }, 50);
@@ -1244,16 +1324,21 @@ function renderShop() {
 
     container.innerHTML = html;
 
-    // Prestige button
+    // Mise à jour du bouton Prestige
     const pb = document.getElementById('prestigeBtn');
     const prestigeCost = getPrestigeCost();
 
+    // On met à jour le texte systématiquement pour montrer la progression
+    pb.textContent = `⚡ UPGRADE TO PRESTIGE ★${state.prestige + 1} (${fmt(prestigeCost)} REQUIS)`;
+
     if (state.totalEarned >= prestigeCost) {
-        pb.classList.add('visible');
-        pb.textContent =
-            `⚡ PRESTIGE ★${state.prestige + 1} — Transcender (${fmt(prestigeCost)} requis)`;
+        pb.classList.add('available');
+        pb.disabled = false;
+        pb.style.opacity = "1";
     } else {
-        pb.classList.remove('visible');
+        pb.classList.remove('available');
+        pb.disabled = true;
+        pb.style.opacity = "0.85"; // Optionnel : rend le bouton un peu plus terne
     }
 }
 
@@ -1277,19 +1362,65 @@ function renderAchievements() {
 
 // ==================== CHECK ACHIEVEMENTS ====================
 function checkAchievements() {
+    let newlyUnlocked = false;
+
     ACHIEVEMENTS_DEF.forEach(a => {
+        // On vérifie si on n'a pas déjà débloqué ce succès
         if (!state.unlockedAchievements.has(a.id) && a.condition(state)) {
             state.unlockedAchievements.add(a.id);
-            document.getElementById(`ach_${a.id}`)?.classList.add('unlocked');
-            document.querySelector(`#ach_${a.id} .achievement-desc`).textContent = a.desc;
-            showNotification(`🏅 TROPHÉE DÉBLOQUÉ`, `${a.icon} ${a.name}`);
+            newlyUnlocked = true;
+
+            // Mise à jour visuelle dans la liste des trophées
+            const achElement = document.getElementById(`ach_${a.id}`);
+            if (achElement) {
+                achElement.classList.add('unlocked');
+                const descElement = achElement.querySelector('.achievement-desc');
+                if (descElement) descElement.textContent = a.desc;
+            }
+
+            showNotification(`🏅 SUCCÈS DÉBLOQUÉ`, `${a.icon} ${a.name}`);
+            
+            // Sauvegarde automatique dès qu'un succès est débloqué
+            saveGame(); 
         }
     });
+
+    // --- LOGIQUE DE VICTOIRE FINALE ---
+    // Si on vient de débloquer quelque chose ET que le compte est bon
+    if (newlyUnlocked && state.unlockedAchievements.size === ACHIEVEMENTS_DEF.length) {
+        triggerFinalVictory();
+    }
+}
+
+function triggerFinalVictory() {
+    // On affiche l'overlay de victoire
+    const victoryOverlay = document.getElementById('victoryOverlay');
+    victoryOverlay.classList.add('active');
+    
+    // On ajoute un effet "arc-en-ciel" au logo pour marquer le coup
+    document.querySelector('.logo').classList.add('victory-flash');
+    
+    // On lance une pluie de miettes dorées
+    for(let i=0; i<50; i++) {
+        setTimeout(() => {
+            spawnCrumbs(window.innerWidth / 2, window.innerHeight / 2);
+        }, i * 100);
+    }
+}
+
+function closeVictory() {
+    document.getElementById('victoryOverlay').classList.remove('active');
 }
 
 // ==================== UPDATE UI ====================
 function updateUI() {
     calcCps();
+
+    // Mise à jour du badge de niveau
+    const badge = document.getElementById('prestigeBadge');
+    if (badge) {
+        badge.textContent = `Niveau ★ ${state.prestige + 1}`;
+    }
 
     document.getElementById('totalHeader').textContent = fmt(state.totalEarned);
     document.getElementById('prestigeHeader').textContent = '★' + state.prestige;
@@ -1306,13 +1437,29 @@ function updateUI() {
     const progress = Math.min(100, ((state.totalEarned - prevMilestone) / (nextMilestone - prevMilestone)) * 100);
     document.getElementById('progressFill').style.width = progress + '%';
     document.getElementById('milestoneText').textContent = `🎯 ${fmt(nextMilestone)} biscuits`;
+    
+    //prestige button
+    updatePrestigeUI();
 }
 
 // ==================== PRESTIGE ====================
+function updatePrestigeUI() {
+    const btn = document.getElementById('prestigeBtn');
+    const cost = getPrestigeCost();
+    
+    if (state.totalEarned >= cost) {
+        btn.classList.add('available');
+    } else {
+        btn.classList.remove('available');
+    }
+}
+
 function startPrestige() {
-    if (state.totalEarned < 500000) return;
+    const prestigeCost = getPrestigeCost();
+    if (state.totalEarned < prestigeCost) return; // Sécurité supplémentaire
+
+    // Reste de ton code de prestige...
     document.getElementById('prestigeOverlay').classList.add('active');
-    document.getElementById('prestigeBadge').textContent = `Niveau ★ ${state.prestige + 1}`;
 }
 
 function confirmPrestige() {
