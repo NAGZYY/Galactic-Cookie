@@ -713,6 +713,16 @@ let state = {
     unlockedAchievements: new Set(),
 };
 
+// ==================== PRESTIGE ====================
+const PRESTIGE_BASE_COST = 1_000_000;
+const PRESTIGE_INCREASE = 0.15;
+
+function getPrestigeCost() {
+    return Math.floor(
+        PRESTIGE_BASE_COST * Math.pow(1 + PRESTIGE_INCREASE, state.prestige)
+    );
+}
+
 // ==================== BUILDINGS ====================
 const BUILDINGS = [
     { id: 'cursor', name: 'Doigt Cosmique', icon: '👆', desc: 'Clique tout seul, maladroitement', baseCps: 0.1, basePrice: 15, count: 0 },
@@ -748,7 +758,10 @@ const ACHIEVEMENTS_DEF = [
     { id: 'grandma5', name: 'Famille Nombreuse', icon: '👩‍👧‍👦', desc: '5 Grand-Mères actives', condition: s => (s.buildings.find(b=>b.id==='grandma')||{count:0}).count >= 5 },
     { id: 'spaceship1', name: 'Cosmonaute Pâtissier', icon: '👨‍🚀', desc: 'Premier vaisseau lancé', condition: s => (s.buildings.find(b=>b.id==='spaceship')||{count:0}).count >= 1 },
     { id: 'prestige1', name: 'Renaissance', icon: '♻️', desc: 'Premier prestige accompli', condition: s => s.prestige >= 1 },
-    { id: 'prestige3', name: 'Éternel', icon: '🌟', desc: '3 prestiges', condition: s => s.prestige >= 3 },
+    { id: 'prestige3', name: 'Éternel', icon: '⭐', desc: '3 prestiges', condition: s => s.prestige >= 3 },
+    { id: 'prestige5', name: 'Immortel', icon: '🌟', desc: '5 prestiges', condition: s => s.prestige >= 5 },
+    { id: 'prestige10', name: 'Incroyable', icon: '🦾', desc: '10 prestiges', condition: s => s.prestige >= 10 },
+    { id: 'prestige20', name: 'Impossible', icon: '🤖', desc: '20 prestiges', condition: s => s.prestige >= 20 },
 ];
 
 // ==================== MILESTONES ====================
@@ -1208,9 +1221,14 @@ function renderShop() {
 
     // Prestige button
     const pb = document.getElementById('prestigeBtn');
-    if (state.totalEarned >= 500000) {
+    const prestigeCost = getPrestigeCost();
+
+    if (state.totalEarned >= prestigeCost) {
         pb.classList.add('visible');
-        pb.textContent = `⚡ PRESTIGE ★${state.prestige + 1} — Transcender (500k requis)`;
+        pb.textContent =
+            `⚡ PRESTIGE ★${state.prestige + 1} — Transcender (${fmt(prestigeCost)} requis)`;
+    } else {
+        pb.classList.remove('visible');
     }
 }
 
