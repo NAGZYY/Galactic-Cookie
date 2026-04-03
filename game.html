@@ -820,7 +820,7 @@ const ACHIEVEMENTS_DEF = [
     { id: 'million', name: 'Galactique', icon: '🌌', desc: 'Le premier million est le plus dur', condition: s => s.totalEarned >= 1000000 },
     { id: 'blackhole_one', name: 'Horizon des Événements', icon: '🕳️', desc: 'Ton premier Trou Noir Sucré', condition: s => (s.buildings.find(b=>b.id==='blackhole')||{count:0}).count >= 1 },
     { id: 'all_buildings', name: 'Empire Industriel', icon: '🏢', desc: 'Possède au moins 1 de chaque bâtiment', condition: s => s.buildings.length >= BUILDINGS.length && s.buildings.every(b => b.count >= 1) },
-    { id: 'overclock', name: 'Overclocking', icon: '🔌', desc: 'Produis plus de 1M de biscuits par seconde', condition: s => s.cps >= 1000000 },
+    { id: 'overclock', name: 'Overclocking', icon: '🔌', desc: 'Produis plus de 1M de biscuits par seconde', condition: s => (s.cps * s.prestigeBonus) >= 1000000 },
     { id: 'prestige1', name: 'Renaissance', icon: '♻️', desc: 'Premier prestige accompli', condition: s => s.prestige >= 1 },
 
     // --- TIER 4 : VÉTÉRAN (Multiples Prestiges) ---
